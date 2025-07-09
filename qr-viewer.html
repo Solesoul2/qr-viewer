@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Data Viewer</title>
+    <!-- REMOVED link to style.css -->
+    <style>
+        /* --- START of Embedded CSS --- */
+        :root {
+            --primary-color: #007bff;
+            --primary-hover-color: #0056b3;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --success-hover-color: #218838;
+            --info-color: #17a2b8;
+            --info-hover-color: #138496;
+            --light-grey-bg: #f8f9fa;
+            --medium-grey-bg: #e9ecef;
+            --border-color: #ccc;
+            --text-color: #333;
+            --text-color-light: #fff;
+            --base-font-family: Arial, sans-serif;
+            --monospace-font-family: 'Courier New', Courier, monospace;
+            --border-radius: 4px;
+        }
+        body {
+            font-family: var(--base-font-family);
+            margin: 20px;
+            background-color: var(--light-grey-bg);
+            line-height: 1.4;
+            color: var(--text-color);
+        }
+        main { max-width: 800px; margin: 0 auto; }
+        header { margin-bottom: 20px; }
+        h1 { text-align: center; }
+        p { text-align: center; }
+        .hidden { display: none !important; }
+
+        /* Button Styles */
+        button, .back-button {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            font-size: 1em;
+            font-weight: 500;
+            color: var(--text-color-light);
+            background-color: var(--secondary-color);
+            border: 1px solid transparent;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+        .submit-button { background-color: var(--success-color); }
+        .submit-button:hover { background-color: var(--success-hover-color); }
+        .info-button { background-color: var(--info-color); }
+        .info-button:hover { background-color: var(--info-hover-color); }
+        .back-button { background-color: var(--secondary-color); color: var(--text-color-light); }
+
+        /* Form Styles */
+        #qrViewerForm { margin-top: 20px; }
+        #qrViewerForm textarea {
+            width: 100%;
+            min-height: 100px;
+            font-family: var(--monospace-font-family);
+            font-size: 0.9em;
+            margin: 0 0 10px 0;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-sizing: border-box;
+        }
+        #qrViewerForm button { display: block; width: 100%; }
+        
+        /* QR Scanner UI */
+        #startScanBtn { display: block; width: 100%; margin: 10px 0; }
+        #qr-reader {
+            width: 100%;
+            max-width: 400px;
+            margin: 15px auto;
+            border: 1px solid #ccc;
+        }
+        #qr-reader-results {
+            margin-top: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--success-color);
+        }
+        
+        /* Recreated Table Styles */
+        #recreatedTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+            background-color: #fff;
+        }
+        #recreatedTable th, #recreatedTable td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+            word-break: break-word;
+        }
+        #recreatedTable th { background-color: var(--medium-grey-bg); font-weight: bold; }
+        #recreatedTable strong { font-weight: bold; color: black; }
+        /* --- END of Embedded CSS --- */
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>ICU Data Viewer</h1>
+    </header>
+
+    <main>
+        <p>Press "Start Camera Scan" to find a QR code, or paste the text into the box below.</p>
+        
+        <button type="button" id="startScanBtn" class="info-button">Start Camera Scan</button>
+        <div id="qr-reader" class="hidden"></div>
+        <div id="qr-reader-results"></div>
+
+        <form id="qrViewerForm">
+            <label for="qrDataInput" class="hidden">QR Data Input</label>
+            <textarea id="qrDataInput" placeholder="QR code text will appear here after scanning..."></textarea>
+            <button type="button" id="recreateTableBtn" class="submit-button">View as Table from Text</button>
+        </form>
+
+        <div id="recreatedTableContainer">
+            <!-- The reconstructed table will be inserted here -->
+        </div>
+
+        <div style="text-align: center; margin-top: 40px;">
+             <a href="index.html" class="back-button">Back to Dashboard</a>
+        </div>
+    </main>
+    
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <script>
+    // --- Start of Embedded JavaScript ---
+    const FINDINGS_KEYWORDS = ["DICU", "DMV", "DPE", "GCS", "sed", "FiO2", "vaso", "WBC", "Hb", "PLT", "Na", "K", "Cr", "GFR", "I/O", "NGF", "IVF", "Septic"];
+    const FINDINGS_REGEXES = FINDINGS_KEYWORDS.map(keyword => ({ keyword, regex: new RegExp(`\\b${keyword}:`, 'gi') }));
+    function boldFindings(text) {
+        if (typeof text !== 'string' || !text) return "";
+        let updatedText = text;
+        FINDINGS_REGEXES.forEach(({ keyword, regex }) => {
+            regex.lastIndex = 0;
+            updatedText = updatedText.replace(regex, `<strong>${keyword}:</strong>`);
+        });
+        return updatedText;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const qrDataInput = document.getElementById("qrDataInput");
+        const recreateTableBtn = document.getElementById("recreateTableBtn");
+        const recreatedTableContainer = document.getElementById("recreatedTableContainer");
+        const startScanBtn = document.getElementById("startScanBtn");
+        const qrReaderElement = document.getElementById("qr-reader");
+        const qrReaderResults = document.getElementById("qr-reader-results");
+        let html5QrCode = null;
+
+        if (!qrDataInput || !recreateTableBtn || !recreatedTableContainer || !startScanBtn || !qrReaderElement || !qrReaderResults) {
+            console.error("QR Viewer initialization failed: Essential DOM elements are missing.");
+            return;
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            qrDataInput.value = decodedText;
+            qrReaderResults.textContent = "Scan successful! Table generated below.";
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    qrReaderElement.classList.add('hidden');
+                    startScanBtn.textContent = "Start New Scan";
+                    startScanBtn.disabled = false;
+                }).catch(err => console.error("Failed to stop scanning.", err));
+            }
+            recreateTableFromText();
+        }
+
+        function onScanFailure(error) { /* Ignore frequent errors */ }
+        
+        function startScanner() {
+            if (typeof Html5Qrcode === 'undefined') {
+                alert("Error: QR Code scanning library could not be loaded. Check internet connection.");
+                return;
+            }
+            if (!html5QrCode) {
+                 html5QrCode = new Html5Qrcode("qr-reader");
+            }
+            qrReaderElement.classList.remove('hidden');
+            qrReaderResults.textContent = "Point camera at QR code...";
+            startScanBtn.textContent = "Scanning...";
+            startScanBtn.disabled = true;
+
+            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+            .catch(err => {
+                console.error("Unable to start scanning.", err);
+                qrReaderResults.innerHTML = `<span style="color:red;">Error: Could not start camera. Please grant camera permissions and ensure you are on a secure (https://) connection.</span>`;
+                qrReaderElement.classList.add('hidden');
+                startScanBtn.textContent = "Try Again";
+                startScanBtn.disabled = false;
+            });
+        }
+
+        function recreateTableFromText() {
+            const inputText = qrDataInput.value.trim();
+            if (!inputText) {
+                alert("Text box is empty. Scan a QR code or paste data first.");
+                return;
+            }
+            const QR_COLUMN_SEPARATOR = '|~|';
+            const QR_ROW_SEPARATOR = '\n';
+            const rows = inputText.split(QR_ROW_SEPARATOR);
+            if (rows.length === 0) {
+                recreatedTableContainer.innerHTML = "<p>No data rows found.</p>";
+                return;
+            }
+            const table = document.createElement('table');
+            table.id = 'recreatedTable';
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            const headers = ["Bed/Patient", "Problems", "Findings", "Medications"];
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+            const tbody = table.createTBody();
+            rows.forEach(rowData => {
+                if (!rowData.trim()) return;
+                const bodyRow = tbody.insertRow();
+                const cells = rowData.split(QR_COLUMN_SEPARATOR);
+                cells.forEach(cellText => {
+                    const td = bodyRow.insertCell();
+                    td.innerHTML = boldFindings(cellText); 
+                });
+                while (bodyRow.cells.length < headers.length) {
+                    bodyRow.insertCell().textContent = "";
+                }
+            });
+            recreatedTableContainer.innerHTML = '';
+            recreatedTableContainer.appendChild(table);
+        }
+
+        startScanBtn.addEventListener('click', startScanner);
+        recreateTableBtn.addEventListener("click", recreateTableFromText);
+    });
+    </script>
+</body>
+</html>
