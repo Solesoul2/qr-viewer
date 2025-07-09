@@ -96,15 +96,26 @@
             margin: 20px 0;
             font-size: 14px;
             background-color: #fff;
+            table-layout: fixed; /* This is important for width control */
         }
         #recreatedTable th, #recreatedTable td {
             border: 1px solid var(--border-color);
             padding: 8px;
             text-align: left;
             vertical-align: top;
-            word-break: break-word;
+            /* **THE FIX IS HERE:** */
+            word-break: break-word; /* Allows breaking within words */
         }
-        #recreatedTable th { background-color: var(--medium-grey-bg); font-weight: bold; }
+        #recreatedTable th { 
+            background-color: var(--medium-grey-bg); 
+            font-weight: bold; 
+        }
+        /* **Set column widths for better layout** */
+        #recreatedTable th:nth-child(1) { width: 18%; } /* Bed/Patient */
+        #recreatedTable th:nth-child(2) { width: 25%; } /* Problems */
+        #recreatedTable th:nth-child(3) { width: 35%; } /* Findings */
+        #recreatedTable th:nth-child(4) { width: 22%; } /* Medications */
+
         #recreatedTable strong { font-weight: bold; color: black; }
         /* --- END of Embedded CSS --- */
     </style>
@@ -132,13 +143,11 @@
             <!-- The reconstructed table will be inserted here -->
         </div>
         
-        <!-- ADDED: PDF Download Button in its own container -->
         <div id="pdfActionContainer" class="action-buttons hidden">
             <button type="button" id="downloadPDFBtn">Download as PDF</button>
         </div>
 
         <div style="text-align: center; margin-top: 40px;">
-             <!-- Note: Back to Dashboard link will only work if you're on the same network or if the dashboard is also hosted online -->
              <a href="index.html" class="back-button">Back to Dashboard</a>
         </div>
     </main>
@@ -275,13 +284,12 @@
             const { jsPDF } = window.jspdf;
             downloadPDFBtn.textContent = "Generating...";
             downloadPDFBtn.disabled = true;
-
-            // Briefly set a white background for capture to avoid transparent background issues on some devices
+            
             table.style.backgroundColor = '#ffffff';
 
             html2canvas(table, { scale: 2, useCORS: true })
                 .then(canvas => {
-                    table.style.backgroundColor = ''; // Reset background color
+                    table.style.backgroundColor = '';
                     const imgData = canvas.toDataURL('image/png');
                     const pdf = new jsPDF({
                         orientation: 'landscape',
