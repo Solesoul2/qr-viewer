@@ -103,11 +103,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         
         const tbody = table.createTBody();
+        // --- PERFORMANCE FIX ---
+        // Create a DocumentFragment to build the rows off-screen
+        const fragment = document.createDocumentFragment();
+
         rows.forEach(rowData => {
             if (!rowData.trim()) return;
-            const bodyRow = tbody.insertRow();
+            // Create the row element
+            const bodyRow = document.createElement('tr');
             const cells = rowData.split(QR_COLUMN_SEPARATOR);
-            // Use innerHTML to render the bold tags from boldFindings
+
             cells.forEach((cellText, index) => {
                 const td = bodyRow.insertCell();
                 // Only apply bolding to the "Findings" column (index 2)
@@ -117,7 +122,12 @@ document.addEventListener("DOMContentLoaded", () => {
             while (bodyRow.cells.length < headers.length) {
                 bodyRow.insertCell().textContent = "";
             }
+            // Append the completed row to the fragment, not the live table
+            fragment.appendChild(bodyRow);
         });
+        
+        // Append the entire fragment to the table body at once
+        tbody.appendChild(fragment);
         
         recreatedTableContainer.innerHTML = '';
         recreatedTableContainer.appendChild(table);
