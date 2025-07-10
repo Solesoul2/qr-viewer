@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Data Viewer</title>
-    <!-- Link to the new external stylesheet -->
+    <!-- Link to the external stylesheet -->
     <link rel="stylesheet" href="qr-viewer.css">
 </head>
 <body>
@@ -14,17 +14,11 @@
     </header>
 
     <main>
-        <p>Press "Start Camera Scan" to find a QR code, or paste the text into the box below.</p>
+        <p>Press "Start Camera Scan" to view data from a QR code.</p>
         
         <button type="button" id="startScanBtn" class="info-button">Start Camera Scan</button>
         <div id="qr-reader" class="hidden"></div>
         <div id="qr-reader-results"></div>
-
-        <form id="qrViewerForm">
-            <label for="qrDataInput" class="hidden">QR Data Input</label>
-            <textarea id="qrDataInput" placeholder="QR code text will appear here after scanning..."></textarea>
-            <button type="button" id="recreateTableBtn" class="submit-button">View as Table from Text</button>
-        </form>
 
         <div id="recreatedTableContainer">
             <!-- The reconstructed table will be inserted here by qr-viewer.js -->
@@ -33,11 +27,6 @@
         <div id="pdfActionContainer" class="action-buttons hidden">
             <button type="button" id="downloadPDFBtn">Download as PDF</button>
         </div>
-
-        <div class="action-buttons" style="margin-top: 40px;">
-             <!-- This link should point to your main dashboard app -->
-             <a href="https://solesoul2.github.io/ICU-Patient-Dashboard/" class="back-button">Back to Dashboard</a>
-        </div>
     </main>
     
     <!-- External Libraries (keep these here) -->
@@ -45,7 +34,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-    <!-- Link to the new external JavaScript file -->
+    <!-- Link to the external JavaScript file -->
     <script src="qr-viewer.js"></script>
 </body>
 </html>
