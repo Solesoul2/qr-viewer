@@ -13,8 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // DOM Element Caching
-    const qrDataInput = document.getElementById("qrDataInput");
-    const recreateTableBtn = document.getElementById("recreateTableBtn");
     const recreatedTableContainer = document.getElementById("recreatedTableContainer");
     const startScanBtn = document.getElementById("startScanBtn");
     const qrReaderElement = document.getElementById("qr-reader");
@@ -23,15 +21,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const downloadPDFBtn = document.getElementById("downloadPDFBtn");
     let html5QrCode = null;
 
-    if (!qrDataInput || !recreateTableBtn || !recreatedTableContainer || !startScanBtn || !qrReaderElement || !qrReaderResults || !pdfActionContainer || !downloadPDFBtn) {
+    if (!recreatedTableContainer || !startScanBtn || !qrReaderElement || !qrReaderResults || !pdfActionContainer || !downloadPDFBtn) {
         console.error("Initialization failed: Essential DOM elements are missing.");
         document.body.innerHTML = "<h1>Error</h1><p>Page could not be initialized. Required elements are missing.</p>";
         return;
     }
 
+    // This function is called on successful scan
     function onScanSuccess(decodedText, decodedResult) {
-        qrDataInput.value = decodedText;
         qrReaderResults.textContent = "Scan successful! Table generated below.";
+        
+        // Stop the scanner if it's running
         if (html5QrCode && html5QrCode.isScanning) {
             html5QrCode.stop().then(() => {
                 qrReaderElement.classList.add('hidden');
@@ -39,7 +39,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 startScanBtn.disabled = false;
             }).catch(err => console.error("Failed to stop scanning.", err));
         }
-        recreateTableFromText();
+
+        // Directly create the table from the scanned text
+        recreateTableFromText(decodedText);
     }
 
     function onScanFailure(error) { /* Ignore frequent errors, they are noisy */ }
@@ -70,17 +72,20 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    function recreateTableFromText() {
-        const inputText = qrDataInput.value.trim();
-        if (!inputText) {
-            alert("Text box is empty. Scan a QR code or paste data first.");
+    // This function now accepts the scanned text as an argument
+    function recreateTableFromText(inputText) {
+        if (!inputText || !inputText.trim()) {
+            recreatedTableContainer.innerHTML = "<p>Scanned QR code was empty.</p>";
+            pdfActionContainer.classList.add('hidden');
             return;
         }
+
         const QR_COLUMN_SEPARATOR = '|~|';
         const QR_ROW_SEPARATOR = '\n';
         const rows = inputText.split(QR_ROW_SEPARATOR);
+
         if (rows.length === 0) {
-            recreatedTableContainer.innerHTML = "<p>No data rows found.</p>";
+            recreatedTableContainer.innerHTML = "<p>No data rows found in QR code.</p>";
             pdfActionContainer.classList.add('hidden');
             return;
         }
@@ -176,6 +181,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Event Listeners
     startScanBtn.addEventListener('click', startScanner);
-    recreateTableBtn.addEventListener("click", recreateTableFromText);
     downloadPDFBtn.addEventListener('click', generatePDF);
 });
