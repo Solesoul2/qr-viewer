@@ -1,1 +1,156 @@
+:root {
+    --primary-color: #007bff;
+    --primary-hover-color: #0056b3;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --success-hover-color: #218838;
+    --info-color: #17a2b8;
+    --info-hover-color: #138496;
+    --light-grey-bg: #f8f9fa;
+    --medium-grey-bg: #e9ecef;
+    --border-color: #ccc;
+    --text-color: #333;
+    --text-color-light: #fff;
+    --base-font-family: Arial, sans-serif;
+    --monospace-font-family: 'Courier New', Courier, monospace;
+    --border-radius: 4px;
+}
+body {
+    font-family: var(--base-font-family);
+    margin: 20px;
+    background-color: var(--light-grey-bg);
+    line-height: 1.4;
+    color: var(--text-color);
+}
+main { 
+    max-width: 95%; /* Use more of the screen width for better viewing */
+    margin: 0 auto; 
+}
+header { 
+    margin-bottom: 20px; 
+}
+h1 { 
+    text-align: center; 
+}
+p { 
+    text-align: center; 
+}
+.hidden { 
+    display: none !important; 
+}
 
+/* Button Styles */
+button, .back-button {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 5px;
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--text-color-light);
+    background-color: var(--secondary-color);
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+button:hover, .back-button:hover {
+    background-color: #5a6268;
+}
+button:disabled { 
+    opacity: 0.6; 
+    cursor: not-allowed; 
+}
+.submit-button { 
+    background-color: var(--success-color); 
+}
+.submit-button:hover { 
+    background-color: var(--success-hover-color); 
+}
+.info-button { 
+    background-color: var(--info-color); 
+}
+.info-button:hover { 
+    background-color: var(--info-hover-color); 
+}
+.back-button { 
+    background-color: var(--secondary-color); 
+    color: var(--text-color-light); 
+}
+.action-buttons { 
+    text-align: center; 
+    margin-top: 15px; 
+}
+
+/* Form Styles */
+#qrViewerForm { 
+    margin-top: 20px; 
+}
+#qrViewerForm textarea {
+    width: 100%;
+    min-height: 100px;
+    font-family: var(--monospace-font-family);
+    font-size: 0.9em;
+    margin: 0 0 10px 0;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-sizing: border-box;
+}
+#qrViewerForm button { 
+    display: block; 
+    width: 100%; 
+}
+
+/* QR Scanner UI */
+#startScanBtn { 
+    display: block; 
+    width: 100%; 
+    max-width: 400px;
+    margin: 10px auto; 
+}
+#qr-reader {
+    width: 100%;
+    max-width: 400px;
+    margin: 15px auto;
+    border: 1px solid #ccc;
+}
+#qr-reader-results {
+    margin-top: 10px;
+    text-align: center;
+    font-weight: bold;
+    color: var(--success-color);
+}
+
+/* Recreated Table Styles */
+#recreatedTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+    background-color: #fff;
+    /* --- PERFORMANCE FIX IS HERE --- */
+    table-layout: fixed; /* This is the key performance improvement */
+}
+#recreatedTable th, #recreatedTable td {
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+    word-break: break-word; /* Allows long text to wrap within the fixed-width cells */
+}
+#recreatedTable th { 
+    background-color: var(--medium-grey-bg); 
+    font-weight: bold; 
+}
+/* --- PERFORMANCE FIX PART 2: DEFINING WIDTHS --- */
+#recreatedTable th:nth-child(1) { width: 18%; } /* Bed/Patient */
+#recreatedTable th:nth-child(2) { width: 25%; } /* Problems */
+#recreatedTable th:nth-child(3) { width: 35%; } /* Findings */
+#recreatedTable th:nth-child(4) { width: 22%; } /* Medications */
+
+#recreatedTable strong { 
+    font-weight: bold; 
+    color: black; 
+}
