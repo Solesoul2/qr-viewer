@@ -23,7 +23,7 @@ body {
     color: var(--text-color);
 }
 main { 
-    max-width: 95%; /* Use more of the screen width for better viewing */
+    max-width: 95%; /* Use more of the screen width */
     margin: 0 auto; 
 }
 header { 
@@ -40,7 +40,7 @@ p {
 }
 
 /* Button Styles */
-button, .back-button {
+button {
     display: inline-block;
     padding: 8px 16px;
     margin: 5px;
@@ -55,7 +55,7 @@ button, .back-button {
     text-decoration: none;
     transition: background-color 0.2s ease;
 }
-button:hover, .back-button:hover {
+button:hover {
     background-color: #5a6268;
 }
 button:disabled { 
@@ -74,33 +74,9 @@ button:disabled {
 .info-button:hover { 
     background-color: var(--info-hover-color); 
 }
-.back-button { 
-    background-color: var(--secondary-color); 
-    color: var(--text-color-light); 
-}
 .action-buttons { 
     text-align: center; 
     margin-top: 15px; 
-}
-
-/* Form Styles */
-#qrViewerForm { 
-    margin-top: 20px; 
-}
-#qrViewerForm textarea {
-    width: 100%;
-    min-height: 100px;
-    font-family: var(--monospace-font-family);
-    font-size: 0.9em;
-    margin: 0 0 10px 0;
-    padding: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    box-sizing: border-box;
-}
-#qrViewerForm button { 
-    display: block; 
-    width: 100%; 
 }
 
 /* QR Scanner UI */
@@ -130,21 +106,19 @@ button:disabled {
     margin: 20px 0;
     font-size: 14px;
     background-color: #fff;
-    /* --- PERFORMANCE FIX IS HERE --- */
-    table-layout: fixed; /* This is the key performance improvement */
+    table-layout: fixed; 
 }
 #recreatedTable th, #recreatedTable td {
     border: 1px solid var(--border-color);
     padding: 8px;
     text-align: left;
     vertical-align: top;
-    word-break: break-word; /* Allows long text to wrap within the fixed-width cells */
+    word-break: break-word; 
 }
 #recreatedTable th { 
     background-color: var(--medium-grey-bg); 
     font-weight: bold; 
 }
-/* --- PERFORMANCE FIX PART 2: DEFINING WIDTHS --- */
 #recreatedTable th:nth-child(1) { width: 18%; } /* Bed/Patient */
 #recreatedTable th:nth-child(2) { width: 25%; } /* Problems */
 #recreatedTable th:nth-child(3) { width: 35%; } /* Findings */
