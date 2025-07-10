@@ -12,6 +12,12 @@ document.addEventListener("DOMContentLoaded", () => {
         return updatedText;
     }
 
+    // --- State for assembling QR code chunks ---
+    let totalChunks = 0;
+    let receivedChunks = {};
+    let isAssembling = false;
+    const QR_CHUNK_SEPARATOR = '|~|';
+
     // DOM Element Caching
     const recreatedTableContainer = document.getElementById("recreatedTableContainer");
     const startScanBtn = document.getElementById("startScanBtn");
@@ -29,24 +35,70 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // This function is called on successful scan
     function onScanSuccess(decodedText, decodedResult) {
-        qrReaderResults.textContent = "Scan successful! Table generated below.";
-        
-        // Stop the scanner if it's running
-        if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop().then(() => {
-                qrReaderElement.classList.add('hidden');
-                startScanBtn.textContent = "Start New Scan";
-                startScanBtn.disabled = false;
-            }).catch(err => console.error("Failed to stop scanning.", err));
-        }
+        // Regular expression to find a header like [1/3]
+        const headerRegex = /^\[(\d+)\/(\d+)\]/;
+        const match = decodedText.match(headerRegex);
 
-        // Directly create the table from the scanned text
-        recreateTableFromText(decodedText);
+        if (match) {
+            // This is a multi-part QR code
+            if (!isAssembling) {
+                // This is the first chunk of a new assembly
+                isAssembling = true;
+                totalChunks = parseInt(match[2], 10);
+                receivedChunks = {};
+            }
+
+            const currentPart = parseInt(match[1], 10);
+            
+            if (!receivedChunks[currentPart]) {
+                const payload = decodedText.substring(match[0].length + QR_CHUNK_SEPARATOR.length);
+                receivedChunks[currentPart] = payload;
+            }
+
+            const receivedCount = Object.keys(receivedChunks).length;
+            qrReaderResults.textContent = `Scanned ${receivedCount} of ${totalChunks}. Please scan the next code.`;
+
+            if (receivedCount === totalChunks) {
+                // Assembly is complete!
+                qrReaderResults.textContent = "All parts scanned. Assembling table...";
+                let fullData = "";
+                for (let i = 1; i <= totalChunks; i++) {
+                    fullData += receivedChunks[i];
+                }
+                recreateTableFromText(fullData);
+                // Reset state for the next session
+                isAssembling = false;
+                if (html5QrCode && html5QrCode.isScanning) {
+                    html5QrCode.stop().then(() => {
+                        qrReaderElement.classList.add('hidden');
+                        startScanBtn.textContent = "Start New Scan";
+                        startScanBtn.disabled = false;
+                    });
+                }
+            }
+        } else {
+            // This is a single, complete QR code (old format or small data)
+            qrReaderResults.textContent = "Scan successful! Table generated below.";
+            isAssembling = false; // Reset any previous assembly state
+            recreateTableFromText(decodedText);
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    qrReaderElement.classList.add('hidden');
+                    startScanBtn.textContent = "Start New Scan";
+                    startScanBtn.disabled = false;
+                });
+            }
+        }
     }
 
-    function onScanFailure(error) { /* Ignore frequent errors, they are noisy */ }
+    function onScanFailure(error) { /* Ignore frequent errors */ }
     
     function startScanner() {
+        // Reset state for a new scanning session
+        isAssembling = false;
+        totalChunks = 0;
+        receivedChunks = {};
+
         if (typeof Html5Qrcode === 'undefined') {
             alert("Error: QR Code scanning library could not be loaded. Check internet connection.");
             return;
@@ -55,8 +107,8 @@ document.addEventListener("DOMContentLoaded", () => {
              html5QrCode = new Html5Qrcode("qr-reader");
         }
         qrReaderElement.classList.remove('hidden');
-        pdfActionContainer.classList.add('hidden'); // Hide PDF button during scan
-        recreatedTableContainer.innerHTML = ''; // Clear old table
+        pdfActionContainer.classList.add('hidden');
+        recreatedTableContainer.innerHTML = '';
         qrReaderResults.textContent = "Point camera at QR code...";
         startScanBtn.textContent = "Scanning...";
         startScanBtn.disabled = true;
@@ -72,7 +124,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // This function now accepts the scanned text as an argument
     function recreateTableFromText(inputText) {
         if (!inputText || !inputText.trim()) {
             recreatedTableContainer.innerHTML = "<p>Scanned QR code was empty.</p>";
@@ -80,7 +131,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const QR_COLUMN_SEPARATOR = '|~|';
         const QR_ROW_SEPARATOR = '\n';
         const rows = inputText.split(QR_ROW_SEPARATOR);
 
@@ -103,35 +153,28 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         
         const tbody = table.createTBody();
-        // --- PERFORMANCE FIX ---
-        // Create a DocumentFragment to build the rows off-screen
         const fragment = document.createDocumentFragment();
 
         rows.forEach(rowData => {
             if (!rowData.trim()) return;
-            // Create the row element
             const bodyRow = document.createElement('tr');
-            const cells = rowData.split(QR_COLUMN_SEPARATOR);
+            const cells = rowData.split(QR_CHUNK_SEPARATOR);
 
             cells.forEach((cellText, index) => {
                 const td = bodyRow.insertCell();
-                // Only apply bolding to the "Findings" column (index 2)
                 td.innerHTML = (index === 2) ? boldFindings(cellText) : cellText;
             });
-            // Ensure every row has the correct number of cells
             while (bodyRow.cells.length < headers.length) {
                 bodyRow.insertCell().textContent = "";
             }
-            // Append the completed row to the fragment, not the live table
             fragment.appendChild(bodyRow);
         });
         
-        // Append the entire fragment to the table body at once
         tbody.appendChild(fragment);
         
         recreatedTableContainer.innerHTML = '';
         recreatedTableContainer.appendChild(table);
-        pdfActionContainer.classList.remove('hidden'); // Show the PDF download button
+        pdfActionContainer.classList.remove('hidden');
     }
 
     function generatePDF() {
@@ -149,12 +192,10 @@ document.addEventListener("DOMContentLoaded", () => {
         downloadPDFBtn.textContent = "Generating...";
         downloadPDFBtn.disabled = true;
         
-        // Temporarily set background to white for capture
         table.style.backgroundColor = '#ffffff';
 
         html2canvas(table, { scale: 2, useCORS: true })
             .then(canvas => {
-                // Restore original background color
                 table.style.backgroundColor = '';
                 const imgData = canvas.toDataURL('image/png');
                 const pdf = new jsPDF({
@@ -164,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = pdf.internal.pageSize.getHeight();
-                const margin = 40; // 20pt on each side
+                const margin = 40;
                 const imgWidth = canvas.width;
                 const imgHeight = canvas.height;
                 
